@@ -1,0 +1,6 @@
+{
+    "listen_port": 35601,
+    "web_port": 8880,
+    "database": "/usr/local/ServerStatus/server/server.db",
+    "admin_pass": "admin123"
+}
