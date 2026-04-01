@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServerStatus 后台管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0f1a; font-family: monospace; font-size: 12px; padding: 15px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: rgba(0,20,40,0.9); border: 1px solid #0ff; border-radius: 4px; padding: 8px 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { color: #0ff; font-size: 14px; }
+        .header a { color: #8cf; text-decoration: none; margin-left: 15px; }
+        .panel { background: rgba(0,20,40,0.7); border: 1px solid #0ff; border-radius: 4px; padding: 12px; margin-bottom: 15px; }
+        .panel h3 { color: #0ff; font-size: 13px; margin-bottom: 10px; border-bottom: 1px solid #0ff; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { padding: 5px 6px; text-align: left; border-bottom: 1px solid #2a4c6e; color: #ccf; }
+        th { color: #0ff; background: rgba(0,255,255,0.05); }
+        .online { color: #0f0; }
+        .offline { color: #f44; }
+        input, select, textarea { background: #0a0f1a; border: 1px solid #2a4c6e; border-radius: 3px; padding: 4px 8px; color: #0ff; font-family: monospace; font-size: 11px; }
+        button { background: #0a2a3a; border: 1px solid #0ff; border-radius: 3px; padding: 4px 12px; color: #0ff; cursor: pointer; margin: 2px; }
+        button:hover { background: #0a4a6e; }
+        .link-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #2a4c6e; flex-wrap: wrap; }
+        .link-row input { width: 150px; }
+        .link-row .link-url { width: 220px; }
+        .command-output { background: #000; color: #0f0; padding: 8px; margin-top: 8px; white-space: pre-wrap; max-height: 200px; overflow: auto; border: 1px solid #0f0; }
+        .log-list { height: 180px; overflow: auto; background: #000; padding: 6px; font-size: 10px; }
+        .log-item { padding: 3px 0; border-bottom: 1px solid #2a4c6e; color: #8cf; }
+        .log-time { color: #0ff; margin-right: 8px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #0a2a3a; border: 1px solid #0f0; padding: 6px 12px; color: #0f0; display: none; z-index: 9999; }
+        .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .mt-2 { margin-top: 8px; }
+        .text-muted { color: #6af; font-size: 10px; }
+        .btn-del { border-color: #f44; color: #f44; }
+        .btn-del:hover { background: #5a2a2a; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2><i class="fas fa-shield-alt"></i> ServerStatus 后台管理</h2>
+        <div>
+            <a href="/"><i class="fas fa-home"></i> 前台</a>
+            <a href="#" onclick="showChangePwd()"><i class="fas fa-key"></i> 修改密码</a>
+            <a href="/logout"><i class="fas fa-sign-out-alt"></i> 退出</a>
+        </div>
+    </div>
+
+    <!-- 节点列表 -->
+    <div class="panel">
+        <h3><i class="fas fa-server"></i> 节点列表</h3>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <th>节点</th><th>位置</th><th>虚拟化</th><th>状态</th><th>协议</th><th>IPv4</th><th>IPv6</th><th>最后更新</th>
+                </thead>
+                <tbody id="nodeList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 命令执行 -->
+    <div class="panel">
+        <h3><i class="fas fa-terminal"></i> 远程命令执行</h3>
+        <div class="flex">
+            <select id="cmdNode" style="width:150px;"></select>
+            <textarea id="cmdInput" rows="2" placeholder="输入Shell命令..." style="flex:1; min-width:200px;"></textarea>
+            <button onclick="sendCmd()">执行</button>
+        </div>
+        <div id="cmdOut" class="command-output" style="display:none;"></div>
+    </div>
+
+    <!-- 友情链接管理 -->
+    <div class="panel">
+        <h3><i class="fas fa-link"></i> 友情链接管理</h3>
+        <div class="flex" style="margin-bottom: 10px;">
+            <input type="text" id="newLinkName" placeholder="链接名称" style="width:150px;">
+            <input type="text" id="newLinkUrl" placeholder="链接地址 (http://...)" style="width:250px;">
+            <button onclick="addLink()">添加</button>
+        </div>
+        <div id="linksList"></div>
+    </div>
+
+    <!-- 操作日志 -->
+    <div class="panel">
+        <h3><i class="fas fa-history"></i> 操作日志</h3>
+        <div class="flex">
+            <select id="logNode" style="width:150px;"><option value="">全部节点</option></select>
+            <button onclick="loadLogs()">刷新</button>
+        </div>
+        <div id="logList" class="log-list mt-2"></div>
+    </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div id="pwdModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#0a1a2a; border:1px solid #0ff; padding:20px; border-radius:8px; z-index:10000; min-width:280px;">
+    <h3 style="color:#0ff;">修改密码</h3>
+    <input type="password" id="oldPwd" placeholder="原密码" style="width:100%; margin:10px 0;"><br>
+    <input type="password" id="newPwd" placeholder="新密码(至少6位)" style="width:100%; margin-bottom:15px;"><br>
+    <button onclick="changePwd()">确认</button>
+    <button onclick="closePwdModal()">取消</button>
+</div>
+<div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999;"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+function toast(msg, err) { var t=document.getElementById('toast'); t.innerHTML=(err?'❌ ':'✅ ')+msg; t.style.display='block'; setTimeout(function(){t.style.display='none';},2500); }
+function escape(s) { if(!s) return ''; return s.replace(/[&<>]/g, function(m){return m=='&'?'&amp;':m=='<'?'&lt;':'&gt;';}); }
+
+// 节点列表
+function loadNodes() {
+    fetch('/api/nodes')
+        .then(res => res.json())
+        .then(data => {
+            var html = '';
+            var opt = '<option value="">选择节点</option>';
+            var logOpt = '<option value="">全部节点</option>';
+            for (var i = 0; i < data.length; i++) {
+                var n = data[i];
+                var protocol = n.protocol || '--';
+                var ipv4 = n.ipv4 || '--';
+                var ipv6 = n.ipv6 || '--';
+                if (protocol == 'v4') ipv6 = '--';
+                if (protocol == 'v6') ipv4 = '--';
+                html += '<tr>';
+                html += '<td>' + escape(n.name) + '<\/td>';
+                html += '<td>' + escape(n.location || '默认') + '<\/td>';
+                html += '<td>' + escape(n.virt || 'KVM') + '<\/td>';
+                html += '<td class="' + (n.online == 1 ? 'online' : 'offline') + '">' + (n.online == 1 ? '在线' : '离线') + '<\/td>';
+                html += '<td>' + protocol + '<\/td>';
+                html += '<td>' + escape(ipv4) + '<\/td>';
+                html += '<td>' + escape(ipv6) + '<\/td>';
+                html += '<td>' + escape(n.last_update || '--') + '<\/td>';
+                html += '<\/tr>';
+                opt += '<option value="' + escape(n.name) + '">' + escape(n.name) + '</option>';
+                logOpt += '<option value="' + escape(n.name) + '">' + escape(n.name) + '</option>';
+            }
+            document.getElementById('nodeList').innerHTML = html;
+            document.getElementById('cmdNode').innerHTML = opt;
+            document.getElementById('logNode').innerHTML = logOpt;
+        })
+        .catch(e => console.log(e));
+}
+
+// 友情链接
+function loadLinks() {
+    fetch('/api/links')
+        .then(res => res.json())
+        .then(data => {
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                html += '<div class="link-row">';
+                html += '<input type="text" id="link_name_' + i + '" value="' + escape(data[i].name) + '" style="width:140px;">';
+                html += '<input type="text" id="link_url_' + i + '" value="' + escape(data[i].url) + '" style="width:220px;">';
+                html += '<button onclick="updateLink(' + i + ',\'' + escape(data[i].name) + '\')">更新</button>';
+                html += '<button onclick="deleteLink(' + i + ',\'' + escape(data[i].name) + '\')" class="btn-del">删除</button>';
+                html += '</div>';
+            }
+            document.getElementById('linksList').innerHTML = html || '<div class="text-muted">暂无链接</div>';
+        });
+}
+
+function addLink() {
+    var name = document.getElementById('newLinkName').value.trim();
+    var url = document.getElementById('newLinkUrl').value.trim();
+    if (!name || !url) { toast('请填写完整', 1); return; }
+    if (!url.startsWith('http')) { toast('地址需http开头', 1); return; }
+    fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add', name: name, url: url })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status == 'ok') {
+            toast('添加成功');
+            loadLinks();
+            document.getElementById('newLinkName').value = '';
+            document.getElementById('newLinkUrl').value = '';
+        } else {
+            toast(data.error || '失败', 1);
+        }
+    });
+}
+
+function updateLink(idx, old) {
+    var name = document.getElementById('link_name_' + idx).value.trim();
+    var url = document.getElementById('link_url_' + idx).value.trim();
+    if (!name || !url) { toast('请填写完整', 1); return; }
+    fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', old_name: old, name: name, url: url })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status == 'ok') {
+            toast('更新成功');
+            loadLinks();
+        } else {
+            toast(data.error || '失败', 1);
+        }
+    });
+}
+
+function deleteLink(idx, name) {
+    if (confirm('删除 ' + name + '?')) {
+        fetch('/api/links', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', name: name })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status == 'ok') {
+                toast('删除成功');
+                loadLinks();
+            } else {
+                toast(data.error || '失败', 1);
+            }
+        });
+    }
+}
+
+// 命令执行
+function sendCmd() {
+    var node = document.getElementById('cmdNode').value;
+    var cmd = document.getElementById('cmdInput').value.trim();
+    if (!node) { toast('请选择节点', 1); return; }
+    if (!cmd) { toast('请输入命令', 1); return; }
+    var out = document.getElementById('cmdOut');
+    out.style.display = 'block';
+    out.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 执行中...';
+    fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node_name: node, command: cmd })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.id) {
+            pollCmd(data.id);
+        } else {
+            out.innerHTML = '<span style="color:#f44;">发送失败</span>';
+        }
+    });
+}
+
+function pollCmd(id) {
+    var cnt = 0;
+    var iv = setInterval(function() {
+        fetch('/api/command/' + id)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status == 'completed') {
+                    clearInterval(iv);
+                    document.getElementById('cmdOut').innerHTML = '<pre>' + escape(data.output || '(无输出)') + '</pre>';
+                } else if (data.status != 'pending') {
+                    clearInterval(iv);
+                    document.getElementById('cmdOut').innerHTML = '<span style="color:#f44;">失败:' + escape(data.output) + '</span>';
+                }
+            });
+        if (++cnt > 60) {
+            clearInterval(iv);
+            document.getElementById('cmdOut').innerHTML = '<span style="color:#f44;">超时</span>';
+        }
+    }, 1000);
+}
+
+// 日志
+function loadLogs() {
+    var node = document.getElementById('logNode').value;
+    fetch('/api/logs' + (node ? '?node=' + encodeURIComponent(node) : ''))
+        .then(res => res.json())
+        .then(data => {
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                html += '<div class="log-item"><span class="log-time">[' + data[i].time + ']</span> ' + (data[i].node ? '<span style="color:#0ff;">' + escape(data[i].node) + ':</span> ' : '') + escape(data[i].message) + '</div>';
+            }
+            document.getElementById('logList').innerHTML = html || '<div class="text-muted">暂无日志</div>';
+        });
+}
+
+// 修改密码
+function showChangePwd() {
+    document.getElementById('pwdModal').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+}
+function closePwdModal() {
+    document.getElementById('pwdModal').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+function changePwd() {
+    var old = document.getElementById('oldPwd').value;
+    var neu = document.getElementById('newPwd').value;
+    if (neu.length < 6) { toast('密码至少6位', 1); return; }
+    fetch('/api/change_password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_password: old, new_password: neu })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status == 'ok') {
+            toast('密码已修改，请重新登录');
+            setTimeout(function() { window.location.href = '/logout'; }, 2000);
+        } else {
+            toast(data.error || '修改失败', 1);
+        }
+    });
+}
+
+loadNodes();
+loadLinks();
+loadLogs();
+setInterval(loadNodes, 10000);
+</script>
+</body>
+</html>
