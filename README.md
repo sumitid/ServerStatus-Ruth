@@ -26,7 +26,7 @@ wget -O status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/ma
 # curl 方式
 curl -o status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/main/status.sh && chmod +x status.sh && ./status.sh s
 ```
-安装完成后，访问： 
+安装完成后，访问：<br>  
 前台：http://你的IP:8880  
 后台：http://你的IP:8880/admin  
 账号：admin  
