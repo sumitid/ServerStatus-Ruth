@@ -26,17 +26,18 @@ wget -O status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/ma
 # curl 方式
 curl -o status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/main/status.sh && chmod +x status.sh && ./status.sh s
 ```
-安装完成后，访问：
-前台：http://你的IP:8880
-后台：http://你的IP:8880/admin
-账号：admin
-密码：查看 /usr/local/ServerStatus/server/config.json
+安装完成后，访问： 
+前台：http://你的IP:8880  
+后台：http://你的IP:8880/admin  
+账号：admin  
+密码：查看 /usr/local/ServerStatus/server/config.json  
 
 客户端安装
 在需要监控的服务器上执行：
 
-bash
+```bash
 wget -O status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/main/status.sh && chmod +x status.sh && ./status.sh c  
+```
 按提示输入服务端IP、节点名称、位置即可。
 
 管理命令
