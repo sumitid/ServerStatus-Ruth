@@ -18,7 +18,7 @@
 
 ```bash
 # wget 方式
-wget -O status.sh https://raw.githubusercontent.com/你的用户名/ServerStatus/main/status.sh && chmod +x status.sh && ./status.sh s
+wget -O status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/main/status.sh && chmod +x status.sh && ./status.sh s
 
 # curl 方式
-curl -o status.sh https://raw.githubusercontent.com/你的用户名/ServerStatus/main/status.sh && chmod +x status.sh && ./status.sh s
+curl -o status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/main/status.sh && chmod +x status.sh && ./status.sh s
