@@ -13,9 +13,9 @@
 - **安全防护**：防越权、防注入、防XSS
 
 ## 更新说明：
-2026.03.03, 增加一键部署脚本
-2017.03.09, 支持低版本debian8，centos6，ubuntu18.04
-2017.03.15, 前台显示主机名，支持ipv4和ipv6模糊显示
+2026.03.03, 增加一键部署脚本  
+2017.03.09, 支持低版本debian8，centos6，ubuntu18.04  
+2017.03.15, 前台显示主机名，支持ipv4和ipv6模糊显示  
 
 ### 服务端安装
 
@@ -36,7 +36,7 @@ curl -o status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/ma
 在需要监控的服务器上执行：
 
 bash
-wget -O status.sh https://raw.githubusercontent.com/你的用户名/ServerStatus/main/status.sh && chmod +x status.sh && ./status.sh c
+wget -O status.sh https://raw.githubusercontent.com/sumitid/ServerStatus-Ruth/main/status.sh && chmod +x status.sh && ./status.sh c  
 按提示输入服务端IP、节点名称、位置即可。
 
 管理命令
